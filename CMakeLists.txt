@@ -19,21 +19,16 @@ qt_standard_project_setup()
 file(GLOB_RECURSE CPP_SOURCES ${LAUNCHER_DIR}/*.cpp)
 file(GLOB_RECURSE HPP_SOURCES ${LAUNCHER_DIR}/*.hpp)
 
-qt_add_executable(${PROJECT_NAME}
-    WIN32 MACOSX_BUNDLE
-    ${CPP_SOURCES}
-    ${HPP_SOURCES}
-)
+add_executable (${PROJECT_NAME} ${CPP_SOURCES} ${HPP_SOURCES})
 
 message(STATUS "Output dir - ${CMAKE_SOURCE_DIR}/build/bin")
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/bin/${PROJECT_NAME}_$<CONFIG>"
 )
 
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        Qt::Core
-        Qt::Widgets
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt::Core
+    Qt::Widgets
 )
 
 include(GNUInstallDirs)
