@@ -1,0 +1,4 @@
+[submodule "src/logger"]
+	path = src/logger
+	url = https://github.com/brano-san/Logger.git
+	branch = master
