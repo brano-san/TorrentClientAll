@@ -16,10 +16,16 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets)
 
 qt_standard_project_setup()
 
-file(GLOB_RECURSE CPP_SOURCES ${LAUNCHER_DIR}/*.cpp)
-file(GLOB_RECURSE HPP_SOURCES ${LAUNCHER_DIR}/*.hpp)
+file(GLOB_RECURSE CPP_SOURCES ${LAUNCHER_DIR}/src/*.cpp)
+file(GLOB_RECURSE HPP_SOURCES ${LAUNCHER_DIR}/src/*.hpp)
 
-add_executable (${PROJECT_NAME} ${CPP_SOURCES} ${HPP_SOURCES})
+if (NOT ${IS_TEST_PROJECT})
+    message(STATUS "Building ${PROJECT_NAME} as executable")
+    add_executable (${PROJECT_NAME} ${CPP_SOURCES} ${HPP_SOURCES})
+else()
+    message(STATUS "Building ${PROJECT_NAME} as library")
+    add_library (${PROJECT_NAME} STATIC ${CPP_SOURCES} ${HPP_SOURCES})
+endif()
 
 message(STATUS "Output dir - ${CMAKE_SOURCE_DIR}/build/bin")
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -50,3 +56,7 @@ install(SCRIPT ${deploy_script})
 set(ENABLE_DEBUG OFF)
 add_subdirectory("${SOURCES_DIR}/Logger")
 target_link_libraries(${PROJECT_NAME} PRIVATE Logger::Logger)
+
+if (${IS_TEST_PROJECT})
+    add_subdirectory("${LAUNCHER_DIR}/tests")
+endif()
