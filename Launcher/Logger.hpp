@@ -10,10 +10,10 @@ DEFINE_CAT_LOGGER_MODULE(CoreLauncher, CoreLauncherSources, kLoggerBacktraceLeng
 }  // namespace logger
 
 // clang-format off
-#define LOG(level, name, message, ...)                      CAT_LOG_##level(CoreLauncher, CoreLauncherSources, name, message, ##__VA_ARGS__)
-#define LOGV(level, name, message, ...)                     CAT_LOGV_##level(CoreLauncher, CoreLauncherSources, name, message, ##__VA_ARGS__)
-#define LOG_LIMIT_TIME(level, name, time, message, ...)     CAT_LOG_##level##_LIMIT_TIME(CoreLauncher, CoreLauncherSources, name, time, message, ##__VA_ARGS__)
-#define LOG_LIMIT_EVERY_N(level, name, count, message, ...) CAT_LOG_##level##_LIMIT_EVERY_N(CoreLauncher, CoreLauncherSources, name, count, message, ##__VA_ARGS__)
+#define LOG(level, name, message, ...)                      CAT_LOG_##level(CoreLauncher, CoreLauncherSources, name, message, ##__VA_ARGS__) // NOLINT(cppcoreguidelines-avoid-do-while)
+#define LOGV(level, name, message, ...)                     CAT_LOGV_##level(CoreLauncher, CoreLauncherSources, name, message, ##__VA_ARGS__) // NOLINT(cppcoreguidelines-avoid-do-while)
+#define LOG_LIMIT_TIME(level, name, time, message, ...)     CAT_LOG_##level##_LIMIT_TIME(CoreLauncher, CoreLauncherSources, name, time, message, ##__VA_ARGS__) // NOLINT(cppcoreguidelines-avoid-do-while)
+#define LOG_LIMIT_EVERY_N(level, name, count, message, ...) CAT_LOG_##level##_LIMIT_EVERY_N(CoreLauncher, CoreLauncherSources, name, count, message, ##__VA_ARGS__) // NOLINT(cppcoreguidelines-avoid-do-while)
 
 #define LOG_TRACE_L3(name, message, ...)  LOG(TRACE_L3,  name, message, ##__VA_ARGS__)
 #define LOG_TRACE_L2(name, message, ...)  LOG(TRACE_L2,  name, message, ##__VA_ARGS__)
