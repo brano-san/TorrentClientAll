@@ -2,11 +2,8 @@
 
 #include "IReadStrategy.hpp"
 
-class TorrentFileReaderStrategy : IReadStrategy
+class FullFileReadStrategy: public IReadStrategy
 {
 public:
-    TorrentFileReaderStrategy() = default;
-    ~TorrentFileReaderStrategy() = default;
-
-    std::vector<uint8_t> read() override;
+private:
 };

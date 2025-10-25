@@ -1,1 +1,1 @@
-﻿#include "TorrentFileReader.hpp"
+﻿#include "FullFileRead.hpp"
