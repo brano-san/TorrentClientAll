@@ -5,7 +5,7 @@ enable_testing()
 
 file(GLOB_RECURSE TEST_MAIN_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 
-add_executable(${PROJECT_NAME} ${TEST_MAIN_SOURCES})
+add_library(${PROJECT_NAME} STATIC ${TEST_MAIN_SOURCES})
 
 set(ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)    
 
