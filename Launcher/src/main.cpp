@@ -22,5 +22,8 @@ int main(int argc, char* argv[])
         const std::string str{argv[i]};
         LOG_INFO(Core, "Argc - {}; Argv[{}] - {}", argc, i, str);
     }
+
+    int32_t a;
+    std::cin >> a;
     return 0;
 }
