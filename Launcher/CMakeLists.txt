@@ -11,16 +11,25 @@ list(FILTER CPP_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
 
 if (NOT ${IS_TEST_PROJECT})
     message(STATUS "Building ${PROJECT_NAME} as main executable")
-    add_executable (${PROJECT_NAME} main.cpp ${CPP_SOURCES} ${HPP_SOURCES})
+    add_executable (${PROJECT_NAME}
+        ${CPP_SOURCES}
+        ${HPP_SOURCES}
+        ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
+    )
 else()
     message(STATUS "Building ${PROJECT_NAME} as executable")
-    add_executable (${PROJECT_NAME} ${CPP_SOURCES} ${HPP_SOURCES})
+    add_executable (${PROJECT_NAME}
+        ${CPP_SOURCES}
+        ${HPP_SOURCES}
+    )
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt::Core
     Qt::Widgets
 )
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
 
 set(ENABLE_DEBUG OFF)
 add_subdirectory("${ROOT_DIR}/src/Logger" ${CMAKE_BINARY_DIR}/Src/Logger)

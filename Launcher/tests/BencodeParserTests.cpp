@@ -1,6 +1,13 @@
 #include <gtest/gtest.h>
 
-TEST(BencodeParserTests, Example)
+#include <BencodeParser/BencodeParser.hpp>
+
+TEST(BencodeParserTests, Example0)
 {
     EXPECT_EQ(1, true);
+}
+
+TEST(BencodeParserTests, Example1)
+{
+    EXPECT_FALSE(1 == false);
 }
