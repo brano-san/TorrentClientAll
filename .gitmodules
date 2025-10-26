@@ -1,0 +1,12 @@
+[submodule "tests/googletest"]
+	path = tests/googletest
+	url = https://github.com/google/googletest
+	branch = main
+[submodule "tests/third_party/googletest"]
+	path = tests/third_party/googletest
+	url = https://github.com/google/googletest
+	branch = main
+[submodule "third_party/Logger"]
+	path = third_party/Logger
+	url = https://github.com/brano-san/Logger
+	branch = master
