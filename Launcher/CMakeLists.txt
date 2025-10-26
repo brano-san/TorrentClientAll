@@ -7,17 +7,16 @@ qt_standard_project_setup()
 
 file(GLOB_RECURSE HPP_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.hpp)
 file(GLOB_RECURSE CPP_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
-list(FILTER CPP_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
 
 if (NOT ${IS_TEST_PROJECT})
     message(STATUS "Building ${PROJECT_NAME} as main executable")
     add_executable (${PROJECT_NAME}
         ${CPP_SOURCES}
         ${HPP_SOURCES}
-        ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
     )
 else()
     message(STATUS "Building ${PROJECT_NAME} as executable")
+    list(FILTER CPP_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
     add_executable (${PROJECT_NAME}
         ${CPP_SOURCES}
         ${HPP_SOURCES}
@@ -32,7 +31,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
 
 set(ENABLE_DEBUG OFF)
-add_subdirectory("${ROOT_DIR}/src/Logger" ${CMAKE_BINARY_DIR}/Src/Logger)
+add_subdirectory("${THIRD_PARTY_DIR}/Logger" ${CMAKE_BINARY_DIR}/third_party/Logger)
 target_link_libraries(${PROJECT_NAME} PRIVATE Logger::Logger)
 
 if (${IS_TEST_PROJECT})
