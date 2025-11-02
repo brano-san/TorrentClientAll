@@ -33,15 +33,21 @@ public:
 
     void parse(const std::string& data);
 
+    size_t size();
     void clear();
 
     [[nodiscard]] std::optional<const std::reference_wrapper<const BencodeItem>> get() const noexcept;
 
 private:
-    void parseInteger(const std::string& data, std::string::const_iterator& currentPos);
-    void parseString(const std::string& data, std::string::const_iterator& currentPos);
+    void parseInteger(const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');
+    void parseString(const std::string& data, std::string::const_iterator& currentPos, size_t stringLength);
     void parseList(const std::string& data, std::string::const_iterator& currentPos);
     void parseDictionary(const std::string& data, std::string::const_iterator& currentPos);
+
+    static std::optional<BencodeItem::BencodeInteger> parseIntegerImpl(
+        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');
+
+    void resetInteratorToEndOfItem(std::string::const_iterator& currentPos);
 
     std::vector<BencodeItem> m_bencodeItems;
 };
