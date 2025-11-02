@@ -4,35 +4,44 @@
 #include <string>
 #include <variant>
 #include <cstdint>
+#include <optional>
 #include <unordered_map>
 
 #include <GenEnum.hpp>
 
-class BencodedDictionary
-{
-    GENENUM(uint8_t, Fields, Announce, AnnounceList, Info, CreationDate, Comment, CreatedBy, Encoding);
-
-public:
-private:
-};
+// class BencodedDictionary
+// {
+//     GENENUM(uint8_t, Fields, Announce, AnnounceList, Info, CreationDate, Comment, CreatedBy, Encoding);
+// };
 
 class BencodeParser
 {
+public:
     struct BencodeItem
     {
         using BencodeInteger    = int64_t;
         using BencodeString     = std::string;
         using BencodeList       = std::vector<BencodeItem>;
-        using BencodeDictionary = std::unordered_map<BencodeItem, BencodeItem>;
+        using BencodeDictionary = std::unordered_map<BencodeString, BencodeItem>;
 
         std::variant<BencodeInteger, BencodeString, BencodeList, BencodeDictionary> item;
     };
 
 public:
-    BencodeParser();
-    ~BencodeParser();
+    BencodeParser()  = default;
+    ~BencodeParser() = default;
 
     void parse(const std::string& data);
 
+    void clear();
+
+    [[nodiscard]] std::optional<const std::reference_wrapper<const BencodeItem>> get() const noexcept;
+
 private:
+    void parseInteger(const std::string& data, std::string::const_iterator& currentPos);
+    void parseString(const std::string& data, std::string::const_iterator& currentPos);
+    void parseList(const std::string& data, std::string::const_iterator& currentPos);
+    void parseDictionary(const std::string& data, std::string::const_iterator& currentPos);
+
+    std::vector<BencodeItem> m_bencodeItems;
 };
