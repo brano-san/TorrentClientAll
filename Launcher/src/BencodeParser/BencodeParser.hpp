@@ -1,5 +1,11 @@
 ﻿#pragma once
 
+#include <vector>
+#include <string>
+#include <variant>
+#include <cstdint>
+#include <unordered_map>
+
 #include <GenEnum.hpp>
 
 class BencodedDictionary
@@ -12,11 +18,21 @@ private:
 
 class BencodeParser
 {
+    struct BencodeItem
+    {
+        using BencodeInteger    = int64_t;
+        using BencodeString     = std::string;
+        using BencodeList       = std::vector<BencodeItem>;
+        using BencodeDictionary = std::unordered_map<BencodeItem, BencodeItem>;
+
+        std::variant<BencodeInteger, BencodeString, BencodeList, BencodeDictionary> item;
+    };
+
 public:
     BencodeParser();
     ~BencodeParser();
 
-    void parse();
+    void parse(const std::string& data);
 
 private:
 };
