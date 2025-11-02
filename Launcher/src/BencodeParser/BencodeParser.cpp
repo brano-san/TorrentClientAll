@@ -4,7 +4,7 @@
 
 void BencodeParser::parse(const std::string& data)
 {
-    for (auto it = data.cbegin(); it != data.cend(); ++it)
+    for (auto it = data.cbegin(); it != data.cend();)
     {
         const char symbol = (*it);
         if (symbol == 'i')
@@ -55,7 +55,6 @@ std::optional<const std::reference_wrapper<const BencodeParser::BencodeItem>> Be
 void BencodeParser::parseInteger(const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator)
 {
     const auto integerOpt = parseIntegerImpl(data, currentPos, integerEndIndicator);
-    resetInteratorToEndOfItem(currentPos);
     if (!integerOpt.has_value())
     {
         LOGE(Core, "Something went wrong in parseIntegerImpl. Dropped");
@@ -72,18 +71,12 @@ void BencodeParser::parseString(const std::string& data, std::string::const_iter
     {
         bencodeString.push_back(*currentPos);
     }
-    resetInteratorToEndOfItem(currentPos);
     m_bencodeItems.push_back(BencodeItem{BencodeItem::BencodeString{std::move(bencodeString)}});
 }
 
 void BencodeParser::parseList(const std::string& data, std::string::const_iterator& currentPos) {}
 
 void BencodeParser::parseDictionary(const std::string& data, std::string::const_iterator& currentPos) {}
-
-void BencodeParser::resetInteratorToEndOfItem(std::string::const_iterator& currentPos)
-{
-    --currentPos;  // sets pos on last symbol of string
-}
 
 std::optional<BencodeParser::BencodeItem::BencodeInteger> BencodeParser::parseIntegerImpl(
     const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator)

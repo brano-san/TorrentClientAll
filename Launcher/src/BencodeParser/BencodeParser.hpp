@@ -47,7 +47,5 @@ private:
     static std::optional<BencodeItem::BencodeInteger> parseIntegerImpl(
         const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');
 
-    void resetInteratorToEndOfItem(std::string::const_iterator& currentPos);
-
     std::vector<BencodeItem> m_bencodeItems;
 };
