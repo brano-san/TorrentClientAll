@@ -6,31 +6,49 @@ void BencodeParser::parse(const std::string& data)
 {
     for (auto it = data.cbegin(); it != data.cend();)
     {
-        const char symbol = (*it);
-        if (symbol == 'i')
+        auto item = parse(data, it);
+        if (!item.has_value())
         {
-            parseInteger(data, it);
+            continue;
         }
-        else if (std::isdigit(symbol) != 0)  // detect string length
-        {
-            const auto stringSize = parseIntegerImpl(data, it, ':');
-            if (!stringSize.has_value())
-            {
-                LOGE(Core, "Cannot get string size from data. Dropped");
-                continue;
-            }
-
-            parseString(data, it, stringSize.value());
-        }
-        else if (symbol == 'l')
-        {
-            parseList(data, it);
-        }
-        else if (symbol == 'd')
-        {
-            parseDictionary(data, it);
-        }
+        m_bencodeItems.push_back(std::move(item.value()));
     }
+}
+
+std::optional<BencodeParser::BencodeItem> BencodeParser::parse(const std::string& data, std::string::const_iterator& currentPos)
+{
+    const char symbol = (*currentPos);
+    if (symbol == 'i')
+    {
+        return parseInteger(data, currentPos);
+    }
+
+    if (std::isdigit(symbol) != 0)  // detect string length
+    {
+        const auto stringSize = parseIntegerImpl(data, currentPos, ':');
+        if (!stringSize.has_value())
+        {
+            LOGE(Core, "Cannot get string size from data. Dropped");
+            return std::nullopt;
+        }
+
+        return parseString(data, currentPos, stringSize.value());
+    }
+
+    if (symbol == 'l')
+    {
+        ++currentPos;
+        return parseList(data, currentPos);
+    }
+
+    if (symbol == 'd')
+    {
+        return parseDictionary(data, currentPos);
+    }
+
+    // Something went wrong here. Skip one pos to prevent endless cycle
+    ++currentPos;
+    return std::nullopt;
 }
 
 size_t BencodeParser::size()
@@ -52,18 +70,20 @@ std::optional<const std::reference_wrapper<const BencodeParser::BencodeItem>> Be
     return std::cref(m_bencodeItems.back());
 }
 
-void BencodeParser::parseInteger(const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator)
+std::optional<BencodeParser::BencodeItem> BencodeParser::parseInteger(
+    const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator)
 {
     const auto integerOpt = parseIntegerImpl(data, currentPos, integerEndIndicator);
     if (!integerOpt.has_value())
     {
         LOGE(Core, "Something went wrong in parseIntegerImpl. Dropped");
-        return;
+        return std::nullopt;
     }
-    m_bencodeItems.push_back(BencodeItem{BencodeItem::BencodeInteger{integerOpt.value()}});
+    return BencodeItem{BencodeItem::BencodeInteger{integerOpt.value()}};
 }
 
-void BencodeParser::parseString(const std::string& data, std::string::const_iterator& currentPos, size_t stringLength)
+std::optional<BencodeParser::BencodeItem> BencodeParser::parseString(
+    const std::string& data, std::string::const_iterator& currentPos, size_t stringLength)
 {
     std::string bencodeString;
     bencodeString.reserve(stringLength);
@@ -71,12 +91,44 @@ void BencodeParser::parseString(const std::string& data, std::string::const_iter
     {
         bencodeString.push_back(*currentPos);
     }
-    m_bencodeItems.push_back(BencodeItem{BencodeItem::BencodeString{std::move(bencodeString)}});
+    return BencodeItem{BencodeItem::BencodeString{std::move(bencodeString)}};
 }
 
-void BencodeParser::parseList(const std::string& data, std::string::const_iterator& currentPos) {}
+BencodeParser::BencodeItem BencodeParser::parseList(const std::string& data, std::string::const_iterator& currentPos)
+{
+    auto list = BencodeParser::BencodeItem::BencodeList{};
+    for (; currentPos != data.cend();)
+    {
+        if (*currentPos == 'e')
+        {
+            ++currentPos;
+            break;
+        }
 
-void BencodeParser::parseDictionary(const std::string& data, std::string::const_iterator& currentPos) {}
+        auto item = parse(data, currentPos);
+        if (!item.has_value())
+        {
+            continue;
+        }
+        list.push_back(std::move(item.value()));
+    }
+    return BencodeParser::BencodeItem{list};
+}
+
+BencodeParser::BencodeItem BencodeParser::parseDictionary(const std::string& data, std::string::const_iterator& currentPos)
+{
+    auto dictionary = BencodeParser::BencodeItem::BencodeDictionary{};
+    for (auto it = data.cbegin(); it != data.cend();)
+    {
+        auto item = parse(data, it);
+        if (!item.has_value())
+        {
+            continue;
+        }
+        // dictionary.push_back(std::move(item.value()));
+    }
+    return BencodeParser::BencodeItem{dictionary};
+}
 
 std::optional<BencodeParser::BencodeItem::BencodeInteger> BencodeParser::parseIntegerImpl(
     const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator)
@@ -107,6 +159,6 @@ std::optional<BencodeParser::BencodeItem::BencodeInteger> BencodeParser::parseIn
     {
         LOGE(Core, "Something went wrong on parse integer. integerString[{1}]. Skipped. Exception message {0}", ex.what(),
             integerString);
-        return std::nullopt;
     }
+    return std::nullopt;
 }

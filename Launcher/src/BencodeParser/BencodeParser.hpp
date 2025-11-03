@@ -39,10 +39,14 @@ public:
     [[nodiscard]] std::optional<const std::reference_wrapper<const BencodeItem>> get() const noexcept;
 
 private:
-    void parseInteger(const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');
-    void parseString(const std::string& data, std::string::const_iterator& currentPos, size_t stringLength);
-    void parseList(const std::string& data, std::string::const_iterator& currentPos);
-    void parseDictionary(const std::string& data, std::string::const_iterator& currentPos);
+    static std::optional<BencodeItem> parse(const std::string& data, std::string::const_iterator& currentPos);
+
+    static std::optional<BencodeItem> parseInteger(
+        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');
+    static std::optional<BencodeItem> parseString(
+        const std::string& data, std::string::const_iterator& currentPos, size_t stringLength);
+    static BencodeItem parseList(const std::string& data, std::string::const_iterator& currentPos);
+    static BencodeItem parseDictionary(const std::string& data, std::string::const_iterator& currentPos);
 
     static std::optional<BencodeItem::BencodeInteger> parseIntegerImpl(
         const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');

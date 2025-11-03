@@ -14,6 +14,32 @@
 //     EXPECT_EQ(1, true);
 // }
 
+TEST(BencodeParserTests, BencodeList)
+{
+    const std::string bencodeString = "li42ee";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+    EXPECT_EQ(parser.size(), 1);
+
+    const auto item = parser.get();
+
+    EXPECT_TRUE(item.has_value());
+
+    const auto& bencodeItem = item.value().get().item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 1);
+
+    for (int32_t i = 0; i < list.size(); ++i)
+    {
+        const auto& a = list[i].item;
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(a));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(a), 42);
+    }
+}
+
 TEST(BencodeParserTests, BencodeZeroStringAndInteger)
 {
     const std::string bencodeString = "0:i42e";
