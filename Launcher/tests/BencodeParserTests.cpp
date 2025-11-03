@@ -54,11 +54,10 @@ TEST(BencodeParserTests, BencodeListWithALotOfStrings)
     const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
     EXPECT_EQ(list.size(), 50);
 
-    for (int32_t i = 0; i < list.size(); ++i)
+    for (const auto& i : list)
     {
-        const auto& a = list[i].item;
-        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(a));
-        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(a), "hello");
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(i.item), "hello");
     }
 }
 
@@ -84,11 +83,10 @@ TEST(BencodeParserTests, BencodeListWithALotOfInteger)
     const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
     EXPECT_EQ(list.size(), 90);
 
-    for (int32_t i = 0; i < list.size(); ++i)
+    for (const auto& i : list)
     {
-        const auto& a = list[i].item;
-        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(a));
-        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(a), 42);
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(i.item), 42);
     }
 }
 
@@ -110,11 +108,10 @@ TEST(BencodeParserTests, BencodeListWithTwoInteger)
     const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
     EXPECT_EQ(list.size(), 2);
 
-    for (int32_t i = 0; i < list.size(); ++i)
+    for (const auto& i : list)
     {
-        const auto& a = list[i].item;
-        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(a));
-        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(a), 42);
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(i.item), 42);
     }
 }
 
@@ -196,11 +193,10 @@ TEST(BencodeParserTests, BencodeListWithInteger)
     const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
     EXPECT_EQ(list.size(), 1);
 
-    for (int32_t i = 0; i < list.size(); ++i)
+    for (const auto& i : list)
     {
-        const auto& a = list[i].item;
-        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(a));
-        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(a), 42);
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(i.item), 42);
     }
 }
 
