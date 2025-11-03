@@ -97,7 +97,7 @@ std::optional<BencodeParser::BencodeItem> BencodeParser::parseString(
 BencodeParser::BencodeItem BencodeParser::parseList(const std::string& data, std::string::const_iterator& currentPos)
 {
     auto list = BencodeParser::BencodeItem::BencodeList{};
-    for (; currentPos != data.cend();)
+    while (currentPos != data.cend())
     {
         if (*currentPos == 'e')
         {
