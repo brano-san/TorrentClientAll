@@ -43,6 +43,7 @@ std::optional<BencodeParser::BencodeItem> BencodeParser::parse(const std::string
 
     if (symbol == 'd')
     {
+        ++currentPos;
         return parseDictionary(data, currentPos);
     }
 
@@ -118,14 +119,33 @@ BencodeParser::BencodeItem BencodeParser::parseList(const std::string& data, std
 BencodeParser::BencodeItem BencodeParser::parseDictionary(const std::string& data, std::string::const_iterator& currentPos)
 {
     auto dictionary = BencodeParser::BencodeItem::BencodeDictionary{};
-    for (auto it = data.cbegin(); it != data.cend();)
+    while (currentPos != data.cend())
     {
-        auto item = parse(data, it);
-        if (!item.has_value())
+        if (*currentPos == 'e')
+        {
+            ++currentPos;
+            break;
+        }
+
+        auto key = parse(data, currentPos);
+        if (!key.has_value())
         {
             continue;
         }
-        // dictionary.push_back(std::move(item.value()));
+
+        // Only strings as key in dictionary
+        if (!std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(key.value().item))
+        {
+            continue;
+        }
+        auto& stringKey = std::get<BencodeParser::BencodeItem::BencodeString>(key.value().item);
+
+        auto value = parse(data, currentPos);
+        if (!value.has_value())
+        {
+            continue;
+        }
+        dictionary.insert_or_assign(std::move(stringKey), std::move(value.value()));
     }
     return BencodeParser::BencodeItem{dictionary};
 }

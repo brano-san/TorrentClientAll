@@ -4,15 +4,77 @@
 
 #include "helper.hpp"
 
-// TEST(BencodeParserTests, Example)
-// {
-//     const std::string testTorrentFileHeader = getTorrentHeaderExample();
+TEST(BencodeParserTests, Example)
+{
+    const std::string testTorrentFileHeader = getTorrentHeaderExample();
 
-//     BencodeParser parser;
-//     // parser.parse(testTorrentFileHeader);
+    BencodeParser parser;
+    parser.parse(testTorrentFileHeader);
+    EXPECT_EQ(parser.size(), 1);
 
-//     EXPECT_EQ(1, true);
-// }
+    const auto item = parser.get();
+
+    EXPECT_TRUE(item.has_value());
+
+    const auto& bencodeItem = item.value().get().item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem));
+
+    const auto dictionary = std::get<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem);
+    EXPECT_EQ(dictionary.size(), 6);
+
+    EXPECT_TRUE(dictionary.contains("announce-list"));
+    EXPECT_TRUE(dictionary.contains("announce"));
+    EXPECT_TRUE(dictionary.contains("comment"));
+    EXPECT_TRUE(dictionary.contains("created by"));
+    EXPECT_TRUE(dictionary.contains("info"));
+    EXPECT_TRUE(dictionary.contains("creation date"));
+}
+
+TEST(BencodeParserTests, BencodeDictionaryWithOnePair)
+{
+    const std::string bencodeString = "d5:helloi42ee";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+    EXPECT_EQ(parser.size(), 1);
+
+    const auto item = parser.get();
+
+    EXPECT_TRUE(item.has_value());
+
+    const auto& bencodeItem = item.value().get().item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem));
+
+    const auto dictionary = std::get<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem);
+    EXPECT_EQ(dictionary.size(), 1);
+
+    for (const auto& pair : dictionary)
+    {
+        EXPECT_EQ(pair.first, "hello");
+
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(pair.second.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(pair.second.item), 42);
+    }
+}
+
+TEST(BencodeParserTests, EmptyBencodeDictionary)
+{
+    const std::string bencodeString = "de";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+    EXPECT_EQ(parser.size(), 1);
+
+    const auto item = parser.get();
+
+    EXPECT_TRUE(item.has_value());
+
+    const auto& bencodeItem = item.value().get().item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem);
+    EXPECT_EQ(list.size(), 0);
+}
 
 TEST(BencodeParserTests, EmptyBencodeList)
 {
