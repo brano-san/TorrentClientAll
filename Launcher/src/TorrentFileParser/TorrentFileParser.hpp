@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-class TorrentFileReader
+class TorrentFileParser
 {
 public:
 
