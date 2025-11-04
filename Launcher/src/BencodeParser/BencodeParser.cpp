@@ -1,5 +1,7 @@
 ﻿#include "BencodeParser.hpp"
 
+#include <utility>
+
 #include "Logger.hpp"
 
 void BencodeParser::parse(const std::string& data)
@@ -64,7 +66,7 @@ void BencodeParser::clear()
 
 bool BencodeParser::isdigit(auto sym)
 {
-    return std::isdigit(sym) == 0;
+    return std::isdigit(sym) != 0;
 }
 
 std::optional<const std::reference_wrapper<const BencodeParser::BencodeItem>> BencodeParser::get() const noexcept
@@ -91,12 +93,19 @@ std::optional<BencodeParser::BencodeItem> BencodeParser::parseInteger(
 std::optional<BencodeParser::BencodeItem> BencodeParser::parseString(
     const std::string& data, std::string::const_iterator& currentPos, size_t stringLength)
 {
-    std::string bencodeString;
-    bencodeString.reserve(stringLength);
-    for (size_t i = 0; i < stringLength && currentPos != data.end(); ++i, ++currentPos)
+    const auto remainingSize = std::distance(currentPos, data.cend());
+    if (remainingSize < 0)
     {
-        bencodeString.push_back(*currentPos);
+        LOGE(Core, "Cannot parse string. Dropped. Something went very wrong...");
+        return std::nullopt;
     }
+    if (std::cmp_less(remainingSize, stringLength))
+    {
+        LOGE(Core, "Cannot parse string. Dropped. String length more than remaining size");
+        return std::nullopt;
+    }
+    std::string bencodeString{currentPos, currentPos + static_cast<std::ptrdiff_t>(stringLength)};
+    currentPos += static_cast<std::ptrdiff_t>(stringLength);
     return BencodeItem{BencodeItem::BencodeString{std::move(bencodeString)}};
 }
 
@@ -168,7 +177,7 @@ std::optional<BencodeParser::BencodeItem::BencodeInteger> BencodeParser::parseIn
             break;
         }
 
-        if (isdigit(symbol) && symbol != kBencodeIntegerMinus)
+        if (!isdigit(symbol) && symbol != kBencodeIntegerMinus)
         {
             continue;
         }
