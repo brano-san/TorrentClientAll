@@ -6,6 +6,8 @@
 
 class TorrentFileParser
 {
+    GENENUM(uint8_t, TorrentFields, Announce, AnnounceList, Info, CreationDate, Comment, CreatedBy, Encoding);
+
 public:
     TorrentFileParser() = default;
     explicit TorrentFileParser(std::unique_ptr<IReadStrategy>&& readStrategy);

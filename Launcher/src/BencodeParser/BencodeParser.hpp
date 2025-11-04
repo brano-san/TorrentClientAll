@@ -9,11 +9,6 @@
 
 #include <GenEnum.hpp>
 
-// class BencodedDictionary
-// {
-//     GENENUM(uint8_t, Fields, Announce, AnnounceList, Info, CreationDate, Comment, CreatedBy, Encoding);
-// };
-
 class BencodeParser
 {
 public:
@@ -39,17 +34,26 @@ public:
     [[nodiscard]] std::optional<const std::reference_wrapper<const BencodeItem>> get() const noexcept;
 
 private:
+    static bool isdigit(auto sym);
+
     static std::optional<BencodeItem> parse(const std::string& data, std::string::const_iterator& currentPos);
 
     static std::optional<BencodeItem> parseInteger(
-        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');
+        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = kBencodeEndIndicator);
     static std::optional<BencodeItem> parseString(
         const std::string& data, std::string::const_iterator& currentPos, size_t stringLength);
     static BencodeItem parseList(const std::string& data, std::string::const_iterator& currentPos);
     static BencodeItem parseDictionary(const std::string& data, std::string::const_iterator& currentPos);
 
     static std::optional<BencodeItem::BencodeInteger> parseIntegerImpl(
-        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = 'e');
+        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = kBencodeEndIndicator);
+
+    static constexpr auto kBencodeEndIndicator = 'e';
+
+    static constexpr auto kBencodeIntegerBegin    = 'i';
+    static constexpr auto kBencodeIntegerMinus    = '-';
+    static constexpr auto kBencodeListBegin       = 'l';
+    static constexpr auto kBencodeDictionaryBegin = 'd';
 
     std::vector<BencodeItem> m_bencodeItems;
 };

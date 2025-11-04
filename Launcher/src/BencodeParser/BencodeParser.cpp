@@ -18,12 +18,12 @@ void BencodeParser::parse(const std::string& data)
 std::optional<BencodeParser::BencodeItem> BencodeParser::parse(const std::string& data, std::string::const_iterator& currentPos)
 {
     const char symbol = (*currentPos);
-    if (symbol == 'i')
+    if (symbol == kBencodeIntegerBegin)
     {
         return parseInteger(data, currentPos);
     }
 
-    if (std::isdigit(symbol) != 0)  // detect string length
+    if (isdigit(symbol))  // detect string length
     {
         const auto stringSize = parseIntegerImpl(data, currentPos, ':');
         if (!stringSize.has_value())
@@ -35,13 +35,13 @@ std::optional<BencodeParser::BencodeItem> BencodeParser::parse(const std::string
         return parseString(data, currentPos, stringSize.value());
     }
 
-    if (symbol == 'l')
+    if (symbol == kBencodeListBegin)
     {
         ++currentPos;
         return parseList(data, currentPos);
     }
 
-    if (symbol == 'd')
+    if (symbol == kBencodeDictionaryBegin)
     {
         ++currentPos;
         return parseDictionary(data, currentPos);
@@ -60,6 +60,11 @@ size_t BencodeParser::size()
 void BencodeParser::clear()
 {
     m_bencodeItems.clear();
+}
+
+bool BencodeParser::isdigit(auto sym)
+{
+    return std::isdigit(sym) == 0;
 }
 
 std::optional<const std::reference_wrapper<const BencodeParser::BencodeItem>> BencodeParser::get() const noexcept
@@ -100,7 +105,7 @@ BencodeParser::BencodeItem BencodeParser::parseList(const std::string& data, std
     auto list = BencodeParser::BencodeItem::BencodeList{};
     while (currentPos != data.cend())
     {
-        if (*currentPos == 'e')
+        if (*currentPos == kBencodeEndIndicator)
         {
             ++currentPos;
             break;
@@ -121,7 +126,7 @@ BencodeParser::BencodeItem BencodeParser::parseDictionary(const std::string& dat
     auto dictionary = BencodeParser::BencodeItem::BencodeDictionary{};
     while (currentPos != data.cend())
     {
-        if (*currentPos == 'e')
+        if (*currentPos == kBencodeEndIndicator)
         {
             ++currentPos;
             break;
@@ -163,7 +168,7 @@ std::optional<BencodeParser::BencodeItem::BencodeInteger> BencodeParser::parseIn
             break;
         }
 
-        if (std::isdigit(symbol) == 0 && symbol != '-')
+        if (isdigit(symbol) && symbol != kBencodeIntegerMinus)
         {
             continue;
         }
