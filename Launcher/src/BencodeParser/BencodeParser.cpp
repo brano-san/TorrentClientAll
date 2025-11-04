@@ -104,9 +104,10 @@ std::optional<BencodeParser::BencodeItem> BencodeParser::parseString(
         LOGE(Core, "Cannot parse string. Dropped. String length more than remaining size");
         return std::nullopt;
     }
-    std::string bencodeString{currentPos, currentPos + static_cast<std::ptrdiff_t>(stringLength)};
-    currentPos += static_cast<std::ptrdiff_t>(stringLength);
-    return BencodeItem{BencodeItem::BencodeString{std::move(bencodeString)}};
+
+    const auto strBegin = currentPos;
+    std::advance(currentPos, stringLength);
+    return BencodeItem{BencodeItem::BencodeString{std::string{strBegin, currentPos}}};
 }
 
 BencodeParser::BencodeItem BencodeParser::parseList(const std::string& data, std::string::const_iterator& currentPos)

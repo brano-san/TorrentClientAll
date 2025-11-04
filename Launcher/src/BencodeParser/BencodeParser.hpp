@@ -48,12 +48,12 @@ private:
     static std::optional<BencodeItem::BencodeInteger> parseIntegerImpl(
         const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = kBencodeEndIndicator);
 
-    static constexpr auto kBencodeEndIndicator = 'e';
+    static constexpr auto kBencodeEndIndicator = u8'e';
 
-    static constexpr auto kBencodeIntegerBegin    = 'i';
-    static constexpr auto kBencodeIntegerMinus    = '-';
-    static constexpr auto kBencodeListBegin       = 'l';
-    static constexpr auto kBencodeDictionaryBegin = 'd';
+    static constexpr auto kBencodeIntegerBegin    = u8'i';
+    static constexpr auto kBencodeIntegerMinus    = u8'-';
+    static constexpr auto kBencodeListBegin       = u8'l';
+    static constexpr auto kBencodeDictionaryBegin = u8'd';
 
     std::vector<BencodeItem> m_bencodeItems;
 };
