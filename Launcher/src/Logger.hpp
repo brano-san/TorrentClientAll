@@ -1,11 +1,12 @@
 ﻿#pragma once
 
+#include <quill/std/FilesystemPath.h>
 #include <GenEnum.hpp>
 #include <logger/CategorizedLogger/CategorizedLogger.hpp>
 
 namespace logger {
 static constexpr uint8_t kLoggerBacktraceLenght = 32;
-GENENUM(uint8_t, CoreLauncherSource, Core);
+GENENUM(uint8_t, CoreLauncherSource, Core, FullFileReadStrategy, TorrentFileParser);
 DEFINE_CAT_LOGGER_MODULE(CoreLauncher, CoreLauncherSources, kLoggerBacktraceLenght);
 }  // namespace logger
 

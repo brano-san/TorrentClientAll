@@ -1,13 +1,14 @@
 ﻿#pragma once
 
-#include <vector>
-#include <cstdint>
+#include <string>
+
+#include <filesystem>
 
 class IReadStrategy
 {
 public:
-    IReadStrategy() = default;
+    IReadStrategy()          = default;
     virtual ~IReadStrategy() = default;
 
-    virtual std::vector<uint8_t> read() = 0;
+    virtual std::string read(const std::filesystem::path& pathToFile) = 0;
 };
