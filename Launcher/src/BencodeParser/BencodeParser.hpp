@@ -1,11 +1,10 @@
 ﻿#pragma once
 
+#include <map>
 #include <vector>
 #include <string>
 #include <variant>
 #include <cstdint>
-#include <optional>
-#include <unordered_map>
 
 #include <GenEnum.hpp>
 
@@ -17,7 +16,7 @@ public:
         using BencodeInteger    = int64_t;
         using BencodeString     = std::string;
         using BencodeList       = std::vector<BencodeItem>;
-        using BencodeDictionary = std::unordered_map<BencodeString, BencodeItem>;
+        using BencodeDictionary = std::map<BencodeString, BencodeItem>;
 
         std::variant<BencodeInteger, BencodeString, BencodeList, BencodeDictionary> item;
     };
@@ -31,12 +30,14 @@ public:
     [[nodiscard]] const std::reference_wrapper<const BencodeItem> get() const noexcept;
 
 private:
-    static std::optional<BencodeItem> parseInteger(
-        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = kBencodeEndIndicator);
-    static std::optional<BencodeItem> parseString(const std::string& data, std::string::const_iterator& currentPos);
+    void parse(std::string::const_iterator begin, std::string::const_iterator end);
 
-    static std::optional<BencodeItem::BencodeInteger> parseIntegerImpl(
-        const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = kBencodeEndIndicator);
+    static BencodeItem parseInteger(std::string::const_iterator& currentPos, std::string::const_iterator& end,
+        char integerEndIndicator = kBencodeEndIndicator);
+    static BencodeItem parseString(std::string::const_iterator& currentPos, std::string::const_iterator& end);
+
+    static BencodeItem::BencodeInteger parseIntegerImpl(std::string::const_iterator& currentPos, std::string::const_iterator& end,
+        char integerEndIndicator = kBencodeEndIndicator);
 
     static constexpr auto kBencodeEndIndicator       = u8'e';
     static constexpr auto kBencodeSeparatorIndicator = u8':';
