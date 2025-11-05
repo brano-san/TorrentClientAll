@@ -1,81 +1,105 @@
 ﻿#include "BencodeParser.hpp"
 
+#include <stack>
 #include <utility>
 
 #include "Logger.hpp"
 
 void BencodeParser::parse(const std::string& data)
 {
-    for (auto it = data.cbegin(); it != data.cend();)
-    {
-        auto item = parse(data, it);
-        if (!item.has_value())
-        {
-            continue;
-        }
-        m_bencodeItems.push_back(std::move(item.value()));
-    }
-}
+    std::optional<BencodeItem::BencodeString> dictionaryKey;
+    std::stack<BencodeItem*> state;
 
-std::optional<BencodeParser::BencodeItem> BencodeParser::parse(const std::string& data, std::string::const_iterator& currentPos)
-{
-    const char symbol = (*currentPos);
-    if (symbol == kBencodeIntegerBegin)
+    const auto insertItem = [&](BencodeItem&& item) -> BencodeItem*
     {
-        return parseInteger(data, currentPos);
-    }
-
-    if (isdigit(symbol))  // detect string length
-    {
-        const auto stringSize = parseIntegerImpl(data, currentPos, ':');
-        if (!stringSize.has_value())
+        if (state.empty())
         {
-            LOGE(Core, "Cannot get string size from data. Dropped");
-            return std::nullopt;
+            // Bencode have one <Root> object that contains all other objects
+            m_bencodeItems = std::move(item);
+            return &m_bencodeItems;
         }
 
-        return parseString(data, currentPos, stringSize.value());
-    }
+        auto& lastState = state.top();
+        if (std::holds_alternative<BencodeItem::BencodeList>(lastState->item))
+        {
+            auto& object = std::get<BencodeParser::BencodeItem::BencodeList>(lastState->item);
+            object.push_back(std::move(item));
+            return &object.back();
+        }
+        else if (std::holds_alternative<BencodeItem::BencodeDictionary>(lastState->item))
+        {
+            if (!dictionaryKey.has_value())
+            {
+                LOGE(Core, "Expected key for dictionary");
+                throw std::runtime_error{"Expected key for dictionary"};
+            }
 
-    if (symbol == kBencodeListBegin)
+            auto& object = std::get<BencodeParser::BencodeItem::BencodeDictionary>(lastState->item);
+            const auto i = object.emplace(std::move(dictionaryKey.value()), std::move(item));
+            dictionaryKey.reset();
+            return &i.first->second;
+        }
+        LOGC(Core, "Something went very wrong");
+        return {};
+    };
+
+    auto it = data.cbegin();
+    while (it != data.cend())
     {
-        ++currentPos;
-        return parseList(data, currentPos);
+        if ((*it) == kBencodeEndIndicator)
+        {
+            ++it;
+            state.pop();
+        }
+        else
+        {
+            if (!state.empty() && std::holds_alternative<BencodeItem::BencodeDictionary>(state.top()->item))
+            {
+                auto strOpt = parseString(data, it);
+                if (strOpt.has_value())
+                {
+                    dictionaryKey = std::get<BencodeParser::BencodeItem::BencodeString>(strOpt.value().item);
+                }
+            }
+
+            if ((*it) == kBencodeIntegerBegin)
+            {
+                auto intOpt = parseInteger(data, it);
+                if (intOpt.has_value())
+                {
+                    insertItem(std::move(intOpt.value()));
+                }
+            }
+            else if (std::isdigit(*it))  // detect string length
+            {
+                auto strOpt = parseString(data, it);
+                if (strOpt.has_value())
+                {
+                    insertItem(std::move(strOpt.value()));
+                }
+            }
+            else if ((*it) == kBencodeListBegin)
+            {
+                ++it;
+                state.push(insertItem(BencodeItem{BencodeItem::BencodeList{}}));
+            }
+            else if ((*it) == kBencodeDictionaryBegin)
+            {
+                ++it;
+                state.push(insertItem(BencodeItem{BencodeItem::BencodeDictionary{}}));
+            }
+            else
+            {
+                // Something went wrong here. Skip one pos to prevent endless cycle
+                ++it;
+            }
+        }
     }
-
-    if (symbol == kBencodeDictionaryBegin)
-    {
-        ++currentPos;
-        return parseDictionary(data, currentPos);
-    }
-
-    // Something went wrong here. Skip one pos to prevent endless cycle
-    ++currentPos;
-    return std::nullopt;
 }
 
-size_t BencodeParser::size()
+const std::reference_wrapper<const BencodeParser::BencodeItem> BencodeParser::get() const noexcept
 {
-    return m_bencodeItems.size();
-}
-
-void BencodeParser::clear()
-{
-    m_bencodeItems.clear();
-}
-
-bool BencodeParser::isdigit(auto sym)
-{
-    return std::isdigit(sym) != 0;
-}
-
-std::optional<const std::reference_wrapper<const BencodeParser::BencodeItem>> BencodeParser::get() const noexcept
-{
-    if (m_bencodeItems.empty())
-    {
-        return std::nullopt;
-    }
-    return std::cref(m_bencodeItems.back());
+    return std::cref(m_bencodeItems);
 }
 
 std::optional<BencodeParser::BencodeItem> BencodeParser::parseInteger(
@@ -91,78 +115,30 @@ std::optional<BencodeParser::BencodeItem> BencodeParser::parseInteger(
 }
 
 std::optional<BencodeParser::BencodeItem> BencodeParser::parseString(
-    const std::string& data, std::string::const_iterator& currentPos, size_t stringLength)
+    const std::string& data, std::string::const_iterator& currentPos)
 {
+    const auto lengthOpt = parseIntegerImpl(data, currentPos, kBencodeSeparatorIndicator);
+    if (!lengthOpt.has_value())
+    {
+        LOGE(Core, "Cannot get string size from data. Dropped");
+        return std::nullopt;
+    }
+
     const auto remainingSize = std::distance(currentPos, data.cend());
     if (remainingSize < 0)
     {
         LOGE(Core, "Cannot parse string. Dropped. Something went very wrong...");
         return std::nullopt;
     }
-    if (std::cmp_less(remainingSize, stringLength))
+    if (std::cmp_less(remainingSize, lengthOpt.value()))
     {
         LOGE(Core, "Cannot parse string. Dropped. String length more than remaining size");
         return std::nullopt;
     }
 
     const auto strBegin = currentPos;
-    std::advance(currentPos, stringLength);
+    std::advance(currentPos, lengthOpt.value());
     return BencodeItem{BencodeItem::BencodeString{std::string{strBegin, currentPos}}};
-}
-
-BencodeParser::BencodeItem BencodeParser::parseList(const std::string& data, std::string::const_iterator& currentPos)
-{
-    auto list = BencodeParser::BencodeItem::BencodeList{};
-    while (currentPos != data.cend())
-    {
-        if (*currentPos == kBencodeEndIndicator)
-        {
-            ++currentPos;
-            break;
-        }
-
-        auto item = parse(data, currentPos);
-        if (!item.has_value())
-        {
-            continue;
-        }
-        list.push_back(std::move(item.value()));
-    }
-    return BencodeParser::BencodeItem{list};
-}
-
-BencodeParser::BencodeItem BencodeParser::parseDictionary(const std::string& data, std::string::const_iterator& currentPos)
-{
-    auto dictionary = BencodeParser::BencodeItem::BencodeDictionary{};
-    while (currentPos != data.cend())
-    {
-        if (*currentPos == kBencodeEndIndicator)
-        {
-            ++currentPos;
-            break;
-        }
-
-        auto key = parse(data, currentPos);
-        if (!key.has_value())
-        {
-            continue;
-        }
-
-        // Only strings as key in dictionary
-        if (!std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(key.value().item))
-        {
-            continue;
-        }
-        auto& stringKey = std::get<BencodeParser::BencodeItem::BencodeString>(key.value().item);
-
-        auto value = parse(data, currentPos);
-        if (!value.has_value())
-        {
-            continue;
-        }
-        dictionary.insert_or_assign(std::move(stringKey), std::move(value.value()));
-    }
-    return BencodeParser::BencodeItem{dictionary};
 }
 
 std::optional<BencodeParser::BencodeItem::BencodeInteger> BencodeParser::parseIntegerImpl(

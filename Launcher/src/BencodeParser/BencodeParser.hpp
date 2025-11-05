@@ -28,32 +28,23 @@ public:
 
     void parse(const std::string& data);
 
-    size_t size();
-    void clear();
-
-    [[nodiscard]] std::optional<const std::reference_wrapper<const BencodeItem>> get() const noexcept;
+    [[nodiscard]] const std::reference_wrapper<const BencodeItem> get() const noexcept;
 
 private:
-    static bool isdigit(auto sym);
-
-    static std::optional<BencodeItem> parse(const std::string& data, std::string::const_iterator& currentPos);
-
     static std::optional<BencodeItem> parseInteger(
         const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = kBencodeEndIndicator);
-    static std::optional<BencodeItem> parseString(
-        const std::string& data, std::string::const_iterator& currentPos, size_t stringLength);
-    static BencodeItem parseList(const std::string& data, std::string::const_iterator& currentPos);
-    static BencodeItem parseDictionary(const std::string& data, std::string::const_iterator& currentPos);
+    static std::optional<BencodeItem> parseString(const std::string& data, std::string::const_iterator& currentPos);
 
     static std::optional<BencodeItem::BencodeInteger> parseIntegerImpl(
         const std::string& data, std::string::const_iterator& currentPos, char integerEndIndicator = kBencodeEndIndicator);
 
-    static constexpr auto kBencodeEndIndicator = u8'e';
+    static constexpr auto kBencodeEndIndicator       = u8'e';
+    static constexpr auto kBencodeSeparatorIndicator = u8':';
 
     static constexpr auto kBencodeIntegerBegin    = u8'i';
     static constexpr auto kBencodeIntegerMinus    = u8'-';
     static constexpr auto kBencodeListBegin       = u8'l';
     static constexpr auto kBencodeDictionaryBegin = u8'd';
 
-    std::vector<BencodeItem> m_bencodeItems;
+    BencodeItem m_bencodeItems;
 };
