@@ -2,12 +2,447 @@
 
 #include <BencodeParser/BencodeParser.hpp>
 
-TEST(BencodeParserTests, Example0)
+#include "helper.hpp"
+
+#include "TorrentFileParser/ReadStrategy/FullFileRead.hpp"
+
+void benchmark(const std::string& name, std::function<void()> fn, int iterations = 1'000)
 {
-    EXPECT_EQ(1, true);
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < iterations; ++i)
+    {
+        fn();
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto avg = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / iterations;
+
+    std::cout << name << ": " << avg << " microseconds (avg over " << iterations << " runs)\n";
 }
 
-TEST(BencodeParserTests, Example1)
+TEST(BencodeParserTests, Example)
 {
-    EXPECT_FALSE(1 == false);
+    FullFileReadStrategy str;
+    const std::string testTorrentFileHeader = str.read(std::filesystem::current_path().append("hades.torrent"));
+
+    BencodeParser parser;
+    EXPECT_NO_THROW(parser.parse(testTorrentFileHeader));
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem));
+
+    const auto dictionary = std::get<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem);
+    EXPECT_EQ(dictionary.size(), 8);
+
+    EXPECT_TRUE(dictionary.contains("announce-list"));
+    EXPECT_TRUE(dictionary.contains("announce"));
+    EXPECT_TRUE(dictionary.contains("comment"));
+    EXPECT_TRUE(dictionary.contains("created by"));
+    EXPECT_TRUE(dictionary.contains("info"));
+    EXPECT_TRUE(dictionary.contains("creation date"));
+    EXPECT_TRUE(dictionary.contains("publisher-url"));
+    EXPECT_TRUE(dictionary.contains("publisher"));
+}
+
+TEST(BencodeParserTests, BencodeDictionaryWithOnePair)
+{
+    const std::string bencodeString = "d5:helloi42ee";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem));
+
+    const auto dictionary = std::get<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem);
+    EXPECT_EQ(dictionary.size(), 1);
+
+    for (const auto& pair : dictionary)
+    {
+        EXPECT_EQ(pair.first, "hello");
+
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(pair.second.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(pair.second.item), 42);
+    }
+}
+
+TEST(BencodeParserTests, EmptyBencodeDictionary)
+{
+    const std::string bencodeString = "de";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem);
+    EXPECT_EQ(list.size(), 0);
+}
+
+TEST(BencodeParserTests, EmptyBencodeList)
+{
+    const std::string bencodeString = "le";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 0);
+}
+
+TEST(BencodeParserTests, BencodeListWithALotOfStrings)
+{
+    const std::string bencodeString =
+        "l5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:"
+        "hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:"
+        "hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:hello5:helloe";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 50);
+
+    for (const auto& i : list)
+    {
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(i.item), "hello");
+    }
+}
+
+TEST(BencodeParserTests, BencodeListWithALotOfInteger)
+{
+    const std::string bencodeString =
+        "li42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42"
+        "ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42"
+        "ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42ei42"
+        "ee";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 90);
+
+    for (const auto& i : list)
+    {
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(i.item), 42);
+    }
+}
+
+TEST(BencodeParserTests, BencodeListWithTwoInteger)
+{
+    const std::string bencodeString = "li42ei42ee";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 2);
+
+    for (const auto& i : list)
+    {
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(i.item), 42);
+    }
+}
+
+TEST(BencodeParserTests, BencodeListWithStringAndInteger)
+{
+    const std::string bencodeString = "l5:helloi42ee";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 2);
+
+    {
+        const auto& a = list[1].item;
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(a));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(a), 42);
+    }
+    {
+        const auto& a = list[0].item;
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(a));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(a), "hello");
+    }
+}
+
+TEST(BencodeParserTests, BencodeListWithIntegerAndString)
+{
+    const std::string bencodeString = "li42e5:helloe";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 2);
+
+    {
+        const auto& a = list[0].item;
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(a));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(a), 42);
+    }
+    {
+        const auto& a = list[1].item;
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(a));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(a), "hello");
+    }
+}
+
+TEST(BencodeParserTests, BencodeListWithInteger)
+{
+    const std::string bencodeString = "li42ee";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+
+    const auto list = std::get<BencodeParser::BencodeItem::BencodeList>(bencodeItem);
+    EXPECT_EQ(list.size(), 1);
+
+    for (const auto& i : list)
+    {
+        EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(i.item));
+        EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(i.item), 42);
+    }
+}
+
+TEST(BencodeParserTests, BencodeZeroStringAndInteger)
+{
+    const std::string bencodeString = "0:i42e";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem), 42);
+}
+
+TEST(BencodeParserTests, BencodeStringAndMegaBigInteger)
+{
+    const std::string bencodeString = "5:helloi999999999999999999999999999e";
+
+    BencodeParser parser;
+    EXPECT_ANY_THROW(parser.parse(bencodeString));
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(bencodeItem), "hello");
+}
+
+TEST(BencodeParserTests, BencodeStringAndNegativeInteger)
+{
+    const std::string bencodeString = "5:helloi-42e";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem), -42);
+}
+
+TEST(BencodeParserTests, BencodeStringAndPositiveInteger)
+{
+    const std::string bencodeString = "5:helloi42e";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem), 42);
+}
+
+TEST(BencodeParserTests, MegaBigIntegerAndBencodeString)
+{
+    const std::string bencodeString = "i999999999999999999999999999e5:hello";
+
+    BencodeParser parser;
+    EXPECT_ANY_THROW(parser.parse(bencodeString));
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem));
+    EXPECT_FALSE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_FALSE(std::holds_alternative<BencodeParser::BencodeItem::BencodeList>(bencodeItem));
+    EXPECT_FALSE(std::holds_alternative<BencodeParser::BencodeItem::BencodeDictionary>(bencodeItem));
+}
+
+TEST(BencodeParserTests, NegativeIntegerAndBencodeZeroString)
+{
+    const std::string bencodeString = "i-42e0:";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(bencodeItem), "");
+}
+
+TEST(BencodeParserTests, NegativeIntegerAndBencodeString)
+{
+    const std::string bencodeString = "i-42e5:hello";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(bencodeItem), "hello");
+}
+
+TEST(BencodeParserTests, PositiveIntegerAndBencodeString)
+{
+    const std::string bencodeString = "i42e5:hello";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(bencodeItem), "hello");
+}
+
+TEST(BencodeParserTests, BencodeLongString)
+{
+    const std::string bencodeString = "50:hellohellohellohellohellohellohellohellohellohello";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_EQ(
+        std::get<BencodeParser::BencodeItem::BencodeString>(bencodeItem), "hellohellohellohellohellohellohellohellohellohello");
+}
+
+TEST(BencodeParserTests, BencodeStringHello)
+{
+    const std::string bencodeString = "5:hello";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(bencodeItem), "hello");
+}
+
+TEST(BencodeParserTests, BencodeZeroString)
+{
+    const std::string bencodeString = "0:";
+
+    BencodeParser parser;
+    parser.parse(bencodeString);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeString>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeString>(bencodeItem), "");
+}
+
+TEST(BencodeParserTests, BencodePositiveInteger)
+{
+    const std::string integerStr = "i42e";
+
+    BencodeParser parser;
+    parser.parse(integerStr);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem), 42);
+}
+
+TEST(BencodeParserTests, BencodeNegativeInteger)
+{
+    const std::string integerStr = "i-42e";
+
+    BencodeParser parser;
+    parser.parse(integerStr);
+
+    const auto& parseResult = parser.get();
+
+    const auto& bencodeItem = parseResult.item;
+    EXPECT_TRUE(std::holds_alternative<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem));
+    EXPECT_EQ(std::get<BencodeParser::BencodeItem::BencodeInteger>(bencodeItem), -42);
+}
+
+TEST(BencodeParserTests, BencodeVeryBigInteger)
+{
+    const std::string integerStr = "i999999999999999999999999999e";
+
+    BencodeParser parser;
+    EXPECT_ANY_THROW(parser.parse(integerStr));
+
+    const auto& item = parser.get();
 }
