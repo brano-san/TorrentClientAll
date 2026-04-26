@@ -27,7 +27,7 @@ public:
 
     void parse(const std::string& data);
 
-    [[nodiscard]] const std::reference_wrapper<const BencodeItem> get() const noexcept;
+    [[nodiscard]] const BencodeItem& get() const noexcept;
 
 private:
     void parse(std::string::const_iterator begin, std::string::const_iterator end);

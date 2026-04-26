@@ -7,14 +7,7 @@
 
 void BencodeParser::parse(const std::string& data)
 {
-    try
-    {
-        parse(data.cbegin(), data.cend());
-    }
-    catch (const std::exception& ex)
-    {
-        LOGE(Core, "Got exception during parse: {}", ex.what());
-    }
+    parse(data.cbegin(), data.cend());
 }
 
 void BencodeParser::parse(std::string::const_iterator begin, std::string::const_iterator end)
@@ -97,9 +90,9 @@ void BencodeParser::parse(std::string::const_iterator begin, std::string::const_
     }
 }
 
-const std::reference_wrapper<const BencodeParser::BencodeItem> BencodeParser::get() const noexcept
+const BencodeParser::BencodeItem& BencodeParser::get() const noexcept
 {
-    return std::cref(m_bencodeItems);
+    return m_bencodeItems;
 }
 
 BencodeParser::BencodeItem BencodeParser::parseInteger(
